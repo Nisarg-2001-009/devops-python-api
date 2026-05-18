@@ -9,6 +9,7 @@ alembic                   # Schema migration tool that integrates with SQLAlchem
 
 # ── Data validation & serialisation ──────────────────────────────────────────
 pydantic[email]           # Runtime type validation for request/response schemas; [email] adds email-validator
+pydantic-settings         # BaseSettings class (split from pydantic core in v2); reads config from env vars / .env
 
 # ── Authentication & security ─────────────────────────────────────────────────
 python-jose[cryptography] # JWT encode/decode; [cryptography] backend is required for RS256/HS256
