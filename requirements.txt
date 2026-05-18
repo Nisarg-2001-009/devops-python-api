@@ -14,6 +14,7 @@ pydantic-settings         # BaseSettings class (split from pydantic core in v2);
 # ── Authentication & security ─────────────────────────────────────────────────
 python-jose[cryptography] # JWT encode/decode; [cryptography] backend is required for RS256/HS256
 passlib[bcrypt]           # Password hashing library; [bcrypt] installs the bcrypt hasher
+bcrypt                    # Explicit pin — passlib's [bcrypt] extra doesn't always pull the right version
 
 # ── Form / multipart support ──────────────────────────────────────────────────
 python-multipart          # Required by FastAPI to parse form data (e.g. OAuth2 login forms)

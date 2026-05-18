@@ -3,8 +3,8 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -15,20 +15,13 @@ from app.schemas.user import TokenData
 settings = get_settings()
 
 # ── Password hashing ──────────────────────────────────────────────────────────
-# CryptContext is a passlib abstraction that supports multiple hashing schemes
-# and makes algorithm migration painless: add a new scheme to the list,
-# set deprecated="auto", and passlib will transparently re-hash old passwords
-# using the new scheme on the user's next successful login.
-#
-# bcrypt is the recommended scheme for passwords:
-#   - Intentionally slow (configurable cost factor, default 12 rounds)
-#   - Incorporates a random salt automatically — no manual salt management
-#   - Resistant to GPU-accelerated brute-force attacks
-#
-# deprecated="auto" marks any scheme that is not the *first* entry as
-# deprecated, so if we ever add argon2 at the front, bcrypt hashes are
-# automatically flagged for rehashing.
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Using the bcrypt library directly instead of passlib's CryptContext wrapper.
+# passlib ≥ 1.7.4 has a known bug where its internal wrap-detection test calls
+# hashpw() with a 72-byte sentinel and crashes on bcrypt ≥ 4.x, which enforces
+# the 72-byte limit strictly. Bypassing passlib removes the problematic layer
+# while keeping identical security properties:
+#   - bcrypt.gensalt() generates a random 16-byte salt per hash (work factor 12)
+#   - bcrypt.checkpw() uses constant-time comparison — timing-safe by design
 
 # ── OAuth2 bearer token extraction ────────────────────────────────────────────
 # OAuth2PasswordBearer tells FastAPI:
@@ -49,19 +42,17 @@ def hash_password(password: str) -> str:
     Never store or log the plain-text value. Call this exactly once, at
     registration time, and persist only the returned hash.
     """
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Return True if plain_password matches the stored bcrypt hash.
 
-    passlib handles extracting the embedded salt and cost factor from the
-    hash string, so callers don't need to manage those details.
-
-    Timing-safe: passlib uses a constant-time comparison internally to
-    prevent timing attacks that could reveal whether a hash prefix matches.
+    bcrypt embeds the salt and cost factor in the hash string itself, so
+    callers don't need to manage those details. checkpw() is constant-time,
+    preventing timing attacks that could reveal whether a hash prefix matches.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 # ── JWT creation ──────────────────────────────────────────────────────────────
