@@ -2,7 +2,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.auth.security import hash_password, verify_password
+from app.auth.security import hash_password, verify_password  # noqa: F401
 from app.models.user import User
 from app.schemas.user import UserCreate
 
@@ -53,9 +53,14 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     user = get_user_by_email(db, email)
     if user is None:
-        # Run a dummy verification to keep response time constant and
-        # prevent timing-based email enumeration attacks.
-        verify_password(password, "$2b$12$dummyhashtopreventtimingattacks000000000000000")
+        # Run bcrypt via hash_password (not verify_password) to keep response
+        # time constant and prevent timing-based email enumeration. We can't
+        # call verify_password with a fake hash because bcrypt.checkpw()
+        # validates the salt format and raises ValueError on an invalid string.
+        # hash_password runs a full bcrypt round — same ~100 ms cost — so
+        # "user not found" and "wrong password" responses are indistinguishable
+        # by timing. The result is intentionally discarded.
+        hash_password(password)
         return None
     if not verify_password(password, user.hashed_password):
         return None
