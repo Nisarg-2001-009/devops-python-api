@@ -1,0 +1,64 @@
+version: "3.9"
+
+# ── Named volumes ──────────────────────────────────────────────────────────────
+# Declared at the top level so Docker manages their lifecycle independently of
+# any individual container. Data persists across `docker-compose down` restarts;
+# use `docker-compose down -v` to also remove volumes.
+volumes:
+  postgres_data:
+
+services:
+
+  # ── PostgreSQL database ──────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine          # Alpine variant keeps the image ~80 MB
+    container_name: finance_db
+    restart: unless-stopped            # Restart automatically unless manually stopped
+    environment:
+      POSTGRES_DB: financedb           # Database created on first boot
+      POSTGRES_USER: nisarg            # Superuser for the database
+      POSTGRES_PASSWORD: password123   # Change this in production via secrets
+    ports:
+      - "5432:5432"                    # Expose to host for direct psql / DBeaver access
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # Persist data between restarts
+    healthcheck:
+      # pg_isready exits 0 when the server is ready to accept connections.
+      # The API service waits for this before starting (via depends_on condition).
+      test: ["CMD-SHELL", "pg_isready -U nisarg -d financedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI application ──────────────────────────────────────────────────────
+  api:
+    build:
+      context: .                       # Use Dockerfile in project root
+      dockerfile: Dockerfile
+    container_name: finance_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"                    # FastAPI / uvicorn
+    depends_on:
+      db:
+        condition: service_healthy     # Don't start until Postgres passes healthcheck
+    environment:
+      # Use service name "db" as hostname — Docker's internal DNS resolves it.
+      DATABASE_URL: postgresql://nisarg:password123@db:5432/financedb
+      # In production replace with a securely generated 32+ char random string.
+      SECRET_KEY: your-super-secret-key-change-in-production-minimum-32-chars
+    env_file:
+      - .env                           # Overrides / extends the environment block above
+
+  # ── pgAdmin 4 ────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: finance_pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"                      # pgAdmin web UI available at http://localhost:5050
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin  # Change before exposing to any network
+    depends_on:
+      - db                             # pgAdmin needs Postgres reachable on startup

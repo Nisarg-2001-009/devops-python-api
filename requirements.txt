@@ -1,0 +1,26 @@
+# ── Web framework & ASGI server ──────────────────────────────────────────────
+fastapi                   # High-performance async web framework built on Starlette
+uvicorn[standard]         # ASGI server; [standard] adds uvloop + httptools for speed
+
+# ── Database ─────────────────────────────────────────────────────────────────
+sqlalchemy                # ORM + Core SQL toolkit; we use the async-compatible declarative style
+psycopg2-binary           # PostgreSQL adapter for Python (binary = no libpq compile needed)
+alembic                   # Schema migration tool that integrates with SQLAlchemy models
+
+# ── Data validation & serialisation ──────────────────────────────────────────
+pydantic[email]           # Runtime type validation for request/response schemas; [email] adds email-validator
+
+# ── Authentication & security ─────────────────────────────────────────────────
+python-jose[cryptography] # JWT encode/decode; [cryptography] backend is required for RS256/HS256
+passlib[bcrypt]           # Password hashing library; [bcrypt] installs the bcrypt hasher
+
+# ── Form / multipart support ──────────────────────────────────────────────────
+python-multipart          # Required by FastAPI to parse form data (e.g. OAuth2 login forms)
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest                    # Test runner
+pytest-asyncio            # Allows async test functions with pytest
+httpx                     # Async-capable HTTP client used by FastAPI's TestClient
+
+# ── Environment & config ──────────────────────────────────────────────────────
+python-dotenv             # Loads variables from a .env file into os.environ at startup
