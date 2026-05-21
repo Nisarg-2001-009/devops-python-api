@@ -1,0 +1,75 @@
+groups:
+  - name: fastapi_alerts
+    rules:
+      - alert: APIDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI application is down"
+          description: "The FastAPI /metrics endpoint has been unreachable for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="fastapi", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="fastapi"}[5m]))
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP error rate"
+          description: "API error rate is above 5% for the last 5 minutes."
+
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="fastapi"}[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency"
+          description: "p95 response latency has been above 500ms for 5 minutes."
+
+      - alert: PostgreSQLHighConnections
+        expr: |
+          (
+            pg_stat_activity_count
+            /
+            pg_settings_max_connections
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL connections above 80%"
+          description: "PostgreSQL is using more than 80% of its maximum connections."
+
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          ) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "System memory usage has been above 85% for 10 minutes."
+
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space above 80%"
+          description: "Filesystem usage is above 80%."

@@ -1,0 +1,108 @@
+{
+  "uid": "business",
+  "title": "Business Dashboard - Finance Metrics",
+  "tags": ["business", "finance"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Transactions Created (per minute)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(rate(finance_transactions_created_total[5m])) by (transaction_type) * 60",
+          "legendFormat": "{{transaction_type}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 2,
+      "title": "Total Transactions Created",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(finance_transactions_created_total)",
+          "legendFormat": "Total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "color": {"fixedColor": "teal", "mode": "fixed"}}
+      }
+    },
+    {
+      "id": 3,
+      "title": "Active Users",
+      "type": "stat",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "targets": [
+        {
+          "expr": "finance_active_users",
+          "legendFormat": "Active Users",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "color": {"fixedColor": "blue", "mode": "fixed"}}
+      }
+    },
+    {
+      "id": 4,
+      "title": "User Logins (per minute)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "rate(finance_user_login_total[5m]) * 60",
+          "legendFormat": "Successful Logins",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(finance_user_login_failures_total[5m]) * 60",
+          "legendFormat": "Failed Logins",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}}
+    },
+    {
+      "id": 5,
+      "title": "Transaction Amount Distribution",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(finance_transaction_amount_dollars_bucket[5m])) by (le, transaction_type))",
+          "legendFormat": "p50 {{transaction_type}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(finance_transaction_amount_dollars_bucket[5m])) by (le, transaction_type))",
+          "legendFormat": "p95 {{transaction_type}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+    },
+    {
+      "id": 6,
+      "title": "API Errors by Endpoint",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"5..\"}[5m])) by (handler)",
+          "legendFormat": "{{handler}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    }
+  ]
+}
