@@ -107,9 +107,6 @@ app.add_middleware(
 )
 
 # ── Prometheus metrics ────────────────────────────────────────────────────────
-# Instrumentator automatically creates a /metrics endpoint in Prometheus
-# exposition format. expose() registers the endpoint. instrument() wraps
-# every route to track request count, latency, and status codes.
 Instrumentator().instrument(app).expose(app)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
