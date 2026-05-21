@@ -17,6 +17,14 @@ from fastapi.responses import RedirectResponse
 from app.config import get_settings
 from app.routers import accounts, analytics, auth, transactions
 
+from prometheus_fastapi_instrumentator import Instrumentator
+from app.metrics import (
+    TRANSACTIONS_CREATED_TOTAL,
+    USERS_REGISTERED_TOTAL,
+    ACTIVE_USERS,
+    USER_LOGIN_TOTAL,
+)
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 # Get a logger named after this module ("app.main"). Uvicorn configures the
 # root logger; child loggers inherit its handlers and level automatically.
@@ -97,6 +105,12 @@ app.add_middleware(
     allow_methods=["*"],   # GET, POST, PUT, PATCH, DELETE, OPTIONS
     allow_headers=["*"],   # Authorization, Content-Type, etc.
 )
+
+# ── Prometheus metrics ────────────────────────────────────────────────────────
+# Instrumentator automatically creates a /metrics endpoint in Prometheus
+# exposition format. expose() registers the endpoint. instrument() wraps
+# every route to track request count, latency, and status codes.
+Instrumentator().instrument(app).expose(app)
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 # All routes are versioned under /api/v1. Bumping to v2 in the future is a

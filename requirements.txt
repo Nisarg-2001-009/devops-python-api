@@ -26,3 +26,6 @@ httpx                     # Async-capable HTTP client used by FastAPI's TestClie
 
 # ── Environment & config ──────────────────────────────────────────────────────
 python-dotenv             # Loads variables from a .env file into os.environ at startup
+
+prometheus-fastapi-instrumentator==0.9.1
+prometheus_client==0.19.0
